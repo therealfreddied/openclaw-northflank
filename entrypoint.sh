@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
-dir="/home/nanobot/.nanobot"
 
+dir="/home/nanobot/.nanobot"
 mkdir -p "$dir" || echo "[entrypoint] warning: mkdir $dir failed"
 config="$dir/config.json"
 
@@ -14,17 +14,5 @@ if [ ! -f "$config" ]; then
     fi
 fi
 
-echo "[entrypoint] Launching nanobot gateway in foreground on config $config"
-
-if [ "$(id -u)" = "0" ]; then
-    chown -R nanobot:nanobot "$dir" /home/nanobot /app 2>/dev/null || true
-    if command -v setpriv >/dev/null 2>&1; then
-        exec setpriv --reuid=nanobot --regid=nanobot --init-groups nanobot /app/.venv/bin/nanobot gateway --foreground --config "$config"
-    elif command -v gosu >/dev/null 2>&1; then
-        exec gosu nanobot /app/.venv/bin/nanobot gateway --foreground --config "$config"
-    else
-        exec su -s /bin/sh nanobot -c "/app/.venv/bin/nanobot gateway --foreground --config $config"
-    fi
-else
-    exec /app/.venv/bin/nanobot gateway --foreground --config "$config"
-fi
+echo "[entrypoint] Starting nanobot gateway..."
+exec /app/.venv/bin/nanobot gateway --foreground --config "$config"

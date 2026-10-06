@@ -69,7 +69,8 @@ RUN sed -i 's/\r$//' /usr/local/bin/entrypoint.sh && chmod +x /usr/local/bin/ent
 # nanobot user via setpriv. The entrypoint drops privileges on every root start
 # and fails closed if it cannot, so the agent never runs as root (see
 # entrypoint.sh).
-USER root
+RUN chown -R nanobot:nanobot /home/nanobot /app
+USER nanobot
 ENV HOME=/home/nanobot
 # Ensure crash output reaches Render logs (app output is otherwise swallowed on
 # non-graceful exit).
