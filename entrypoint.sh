@@ -5,10 +5,9 @@ dir="/home/nanobot/.nanobot"
 mkdir -p "$dir" || true
 config="$dir/config.json"
 
-if [ ! -f "$config" ]; then
-    echo "[entrypoint] Copying northflank-config.json to $config"
-    cp /app/northflank-config.json "$config"
-fi
+# Force overwrite with the northflank template so host=0.0.0.0 is always active
+echo "[entrypoint] Setting up config at $config..."
+cp /app/northflank-config.json "$config"
 
-echo "[entrypoint] Starting nanobot gateway..."
-exec /app/.venv/bin/python -m nanobot.cli.entry gateway --foreground --config "$config"
+echo "[entrypoint] Starting nanobot gateway in foreground..."
+exec /app/.venv/bin/nanobot gateway --foreground --config "$config"
