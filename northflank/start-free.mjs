@@ -51,7 +51,7 @@ function token() {
 }
 
 function buildConfig(authToken) {
-  const publicHost = process.env.PUBLIC_HOST ?? "";
+  const publicHost = process.env.PUBLIC_HOST ?? "claw--openclaw-free--q2728nnx75yc.code.run";
   const routerBase = process.env.ROUTER_BASE_URL ?? "";
   const routerKey = process.env.ROUTER_API_KEY ?? "";
   const nullrouteKey = process.env.NULLROUTE_KEY ?? "";
