@@ -48,6 +48,10 @@ function buildConfig(authToken) {
       mode: "local",
       bind: "lan",
       port,
+      // Northflank terminates TLS at its ingress and forwards X-Forwarded-For.
+      // The gateway must trust that proxy range or it rejects proxied requests
+      // with 403 proxy_attribution_required. Override with TRUSTED_PROXIES.
+      trustedProxies: csv(process.env.TRUSTED_PROXIES || "10.0.0.0/8"),
       controlUi: { allowedOrigins: [`https://${publicHost}`] },
       auth: { mode: "token", token: authToken },
     },
