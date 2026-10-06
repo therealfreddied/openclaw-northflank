@@ -6,12 +6,18 @@ echo "[*] Initializing 9router + OpenClaw unified free stack..."
 mkdir -p /root/.9router
 mkdir -p /root/.openclaw/workspace
 
+# Generate or read gateway auth token
+if [ -n "$GATEWAY_TOKEN" ]; then
+  AUTH_TOKEN="$GATEWAY_TOKEN"
+else
+  AUTH_TOKEN=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' 
+')
+fi
+
 # 1. Configure 9router Gemini Key Pool if GEMINI_KEYS or GEMINI_API_KEY provided
 if [ -n "$GEMINI_KEYS" ] || [ -n "$GEMINI_API_KEY" ]; then
-  KEYS_RAW="${GEMINI_KEYS:-$GEMINI_API_KEY}"
   echo "[*] Configuring 9router with rotating Gemini API keys..."
   
-  # Format keys array as JSON
   python3 -c "
 import json, os
 raw = os.environ.get('GEMINI_KEYS') or os.environ.get('GEMINI_API_KEY') or ''
@@ -41,14 +47,14 @@ fi
 
 # 2. Configure OpenClaw Gateway
 if [ ! -f /root/.openclaw/openclaw.json ]; then
-cat << 'EOF' > /root/.openclaw/openclaw.json
+cat << EOF > /root/.openclaw/openclaw.json
 {
   "gateway": {
     "mode": "local",
     "port": 18789,
     "auth": {
       "mode": "token",
-      "token": "***"
+      "token": "${AUTH_TOKEN}"
     }
   },
   "agents": {
@@ -62,7 +68,7 @@ cat << 'EOF' > /root/.openclaw/openclaw.json
       "router": {
         "baseUrl": "http://127.0.0.1:20129/v1",
         "api": "openai-completions",
-        "apiKey": "***",
+        "apiKey": "local-9router",
         "models": [
           {
             "id": "gemini-2.5-flash",
@@ -87,7 +93,7 @@ cat << 'EOF' > /root/.openclaw/openclaw.json
       "omniroute": {
         "baseUrl": "https://api.nullroute.lol/v1",
         "api": "openai-completions",
-        "apiKey": "***",
+        "apiKey": "nullroute-client",
         "models": [
           {
             "id": "nullroute/smart",
@@ -114,24 +120,20 @@ cat << 'EOF' > /root/.openclaw/openclaw.json
   "mcp": {
     "servers": {
       "search": {
-        "url": "https://donsetch.ftp.sh/search",
-        "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer 929c0d37a125c23323d1b224ec66c23d" }
+        "url": "https://api.nullroute.lol/search/mcp",
+        "transport": "streamable-http"
       },
       "memory": {
-        "url": "https://donsetch.ftp.sh/memory/mcp",
-        "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer 929c0d37a125c23323d1b224ec66c23d" }
+        "url": "https://api.nullroute.lol/memory/mcp",
+        "transport": "streamable-http"
       },
       "crawl": {
-        "url": "https://donsetch.ftp.sh/crawl/mcp",
-        "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer 929c0d37a125c23323d1b224ec66c23d" }
+        "url": "https://api.nullroute.lol/crawl/mcp",
+        "transport": "streamable-http"
       },
       "context": {
-        "url": "https://donsetch.ftp.sh/context/mcp",
-        "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer 929c0d37a125c23323d1b224ec66c23d" }
+        "url": "https://api.nullroute.lol/docs/mcp",
+        "transport": "streamable-http"
       }
     }
   }
@@ -144,6 +146,6 @@ if [ -n "$GATEWAY_TOKEN" ]; then
 fi
 
 # 3. Launch OpenClaw Gateway (capped to 256MB RAM)
-echo "[*] Launching OpenClaw Gateway on port ${PORT:-18789}..."
+echo "[*] Launching OpenClaw Gateway on port ${PORT:-18789} with auth token: ${AUTH_TOKEN}..."
 export NODE_OPTIONS="--max-old-space-size=256"
 exec openclaw gateway --port ${PORT:-18789} --allow-unconfigured
