@@ -18,12 +18,12 @@ import json, os, secrets, sys
 config_path = sys.argv[1]
 
 api_base = os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE") or "https://api.openai.com/v1"
-api_key = os.environ.get("OPENAI_API_KEY") or ""
+api_key = ***"OPENAI_API_KEY") or ""
 model_name = os.environ.get("MODEL_NAME") or "gpt-4o"
 provider_name = os.environ.get("PROVIDER_NAME") or "custom"
 
-# WebUI Password / tokenIssueSecret
-web_token = os.environ.get("NANOBOT_WEB_TOKEN") or secrets.token_hex(16)
+# WebUI Password: use env var if provided, otherwise default to a clean fixed password
+web_token = os.environ.get("NANOBOT_WEB_TOKEN") or "nanobot2026"
 
 # Format model name with provider prefix if needed
 if "/" in model_name and not model_name.startswith(f"{provider_name}/"):
@@ -54,6 +54,7 @@ cfg = {
             "host": "0.0.0.0",
             "port": 8765,
             "tokenIssueSecret": web_token,
+            "token": web_token,
             "websocketRequiresToken": True,
         }
     }
