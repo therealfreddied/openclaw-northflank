@@ -1,0 +1,27 @@
+FROM node:24-slim
+
+# --- Minimal runtime deps -------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      curl ca-certificates git tar procps sqlite3 unzip ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# --- Bun runtime (much lighter RSS than Node) -----------------------------
+RUN curl -fsSL https://bun.sh/install | bash
+ENV PATH="/root/.bun/bin:${PATH}"
+
+WORKDIR /root
+
+# --- OpenClaw (stock install; Bun executes it) ----------------------------
+RUN npm install -g openclaw@latest --omit=dev --no-audit --no-fund
+
+# --- Runtime env tuned for the 512MB free tier ----------------------------
+ENV NODE_ENV=production
+ENV OPENCLAW_STATE_DIR="/dev/shm/openclaw"
+ENV PORT=18789
+ENV UV_THREADPOOL_SIZE=2
+
+COPY northflank/start-free.mjs /opt/openclaw/start-free.mjs
+COPY northflank/state-sync.mjs /opt/openclaw/state-sync.mjs
+
+EXPOSE 18789
+CMD ["bash", "-lc", "/root/.bun/bin/bun /opt/openclaw/start-free.mjs"]
