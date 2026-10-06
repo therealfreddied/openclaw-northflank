@@ -17,10 +17,10 @@ import json, os, secrets, sys
 
 config_path = sys.argv[1]
 
-api_base = os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE") or "https://api.openai.com/v1"
-api_key = ***"OPENAI_API_KEY") or ""
-model_name = os.environ.get("MODEL_NAME") or "gpt-4o"
-provider_name = os.environ.get("PROVIDER_NAME") or "custom"
+api_base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
+api_key = os.environ.get("OPENAI_API_KEY", "dummy-key")
+model_name = os.environ.get("MODEL_NAME", "gpt-4o")
+provider_name = os.environ.get("PROVIDER_NAME", "custom")
 
 # WebUI Password: use env var if provided, otherwise default to a clean fixed password
 web_token = os.environ.get("NANOBOT_WEB_TOKEN") or "nanobot2026"
