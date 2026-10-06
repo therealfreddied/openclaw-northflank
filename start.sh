@@ -13,7 +13,7 @@ const raw = process.env.GEMINI_KEYS || process.env.GEMINI_API_KEY || "";
 const keys = raw.replace(/;/g, ",").split(",").map(k => k.trim()).filter(Boolean);
 
 const config = {
-  port: 20129,
+  port: 20128,
   host: "0.0.0.0",
   providers: {
     gemini: {
@@ -26,12 +26,12 @@ const config = {
 
 fs.mkdirSync("/root/.9router", { recursive: true });
 fs.writeFileSync("/root/.9router/config.json", JSON.stringify(config, null, 2));
-console.log(`Configured 9router on 0.0.0.0:20129 with ${keys.length} key(s).`);
+console.log(`Configured 9router on 0.0.0.0:20128 with ${keys.length} key(s).`);
 '
 
-# 2. Launch 9router in Background (low memory footprint)
-echo "[*] Launching 9router on 0.0.0.0:20129..."
-NODE_OPTIONS="--max-old-space-size=96" 9router start --port 20129 --host 0.0.0.0 > /tmp/9router.log 2>&1 &
+# 2. Launch 9router in Background (bound to 0.0.0.0:20128 for external dashboard access)
+echo "[*] Launching 9router on 0.0.0.0:20128..."
+NODE_OPTIONS="--max-old-space-size=96" 9router --port 20128 --host 0.0.0.0 --no-browser --log > /tmp/9router.log 2>&1 &
 sleep 2
 
 # 3. Configure OpenClaw Gateway
@@ -65,7 +65,7 @@ cat << EOF > /root/.openclaw/openclaw.json
   "models": {
     "providers": {
       "router": {
-        "baseUrl": "http://127.0.0.1:20129/v1",
+        "baseUrl": "http://127.0.0.1:20128/v1",
         "api": "openai-completions",
         "apiKey": "local-9router-token",
         "models": [
@@ -143,7 +143,7 @@ cat << EOF > /root/.openclaw/openclaw.json
 }
 EOF
 
-# 4. Launch OpenClaw Gateway (capped heap to stay under container limits)
+# 4. Launch OpenClaw Gateway
 echo "[*] Launching OpenClaw Gateway on 0.0.0.0:18789..."
 export NODE_OPTIONS="--max-old-space-size=256"
 exec openclaw gateway --port 18789 --bind lan --allow-unconfigured
