@@ -29,9 +29,25 @@ fs.writeFileSync("/root/.9router/config.json", JSON.stringify(config, null, 2));
 console.log(`Configured 9router on 0.0.0.0:20128 with ${keys.length} key(s).`);
 '
 
-# 2. Launch 9router in Background (bound to 0.0.0.0:20128 for external dashboard access)
-echo "[*] Launching 9router on 0.0.0.0:20128..."
-NODE_OPTIONS="--max-old-space-size=96" 9router --port 20128 --host 0.0.0.0 --no-browser --log > /tmp/9router.log 2>&1 &
+# 2. Locate 9router standalone server and launch directly in background (avoids interactive TUI prompt exit)
+NINE_ROUTER_DIR=$(node -e '
+const path = require("path");
+const fs = require("fs");
+const base = path.dirname(require.resolve("9router/package.json"));
+const custom = path.join(base, "app", "custom-server.js");
+const server = path.join(base, "app", "server.js");
+if (fs.existsSync(custom)) {
+  console.log(custom);
+} else if (fs.existsSync(server)) {
+  console.log(server);
+} else {
+  console.log("");
+}
+')
+
+echo "[*] Found 9router server entrypoint at: $NINE_ROUTER_DIR"
+echo "[*] Launching 9router daemon on 0.0.0.0:20128..."
+PORT=20128 HOSTNAME=0.0.0.0 NODE_OPTIONS="--max-old-space-size=128" node "$NINE_ROUTER_DIR" > /tmp/9router.log 2>&1 &
 sleep 2
 
 # 3. Configure OpenClaw Gateway
@@ -92,7 +108,7 @@ cat << EOF > /root/.openclaw/openclaw.json
       "omniroute": {
         "baseUrl": "https://api.nullroute.lol/v1",
         "api": "openai-completions",
-        "apiKey": "sk-c4f4b123d6a9e108ab4f",
+        "apiKey": "sk-c4fa98d2ab4f",
         "models": [
           {
             "id": "nullroute/smart",
@@ -121,22 +137,22 @@ cat << EOF > /root/.openclaw/openclaw.json
       "search": {
         "url": "https://api.nullroute.lol/search/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4fa98d2ab4f" }
       },
       "memory": {
         "url": "https://api.nullroute.lol/memory/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4fa98d2ab4f" }
       },
       "crawl": {
         "url": "https://api.nullroute.lol/crawl/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4fa98d2ab4f" }
       },
       "context": {
         "url": "https://api.nullroute.lol/docs/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4fa98d2ab4f" }
       }
     }
   }
