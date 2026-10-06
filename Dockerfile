@@ -1,12 +1,13 @@
 FROM node:24-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends     curl     ca-certificates     git     tar     sqlite3     && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends     curl     ca-certificates     git     tar     sqlite3     procps     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /root/.openclaw
+WORKDIR /root
 
-RUN npm install -g openclaw@latest --omit=dev
+# Install OpenClaw globally & install 9router
+RUN npm install -g openclaw@latest --omit=dev &&     npm install -g 9router@latest --omit=dev
 
-ENV NODE_OPTIONS="--max-old-space-size=384"
+# Memory & Runtime Configuration (Caps heap to stay safely under 512MB RAM)
 ENV OPENCLAW_STATE_DIR="/root/.openclaw"
 ENV PORT=18789
 
