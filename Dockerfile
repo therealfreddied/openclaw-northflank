@@ -1,28 +1,25 @@
 FROM node:24-slim
 
-# Install system dependencies
+# Minimal system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     git \
     tar \
-    sqlite3 \
     procps \
+    sqlite3 \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /root
 
-# Install OpenClaw globally & install 9router CLI
-RUN npm install -g openclaw@latest --omit=dev && \
-    npm install -g 9router@latest --omit=dev
+# OpenClaw only — no 9router (single-container deployment)
+RUN npm install -g openclaw@latest --omit=dev
 
-# Environment setup
 ENV OPENCLAW_STATE_DIR="/root/.openclaw"
 ENV PORT=18789
 
-COPY start.sh /start.sh
-RUN chmod +x /start.sh
+COPY start-openclaw.sh /start-openclaw.sh
+RUN chmod +x /start-openclaw.sh
 
-EXPOSE 18789 20129
-
-CMD ["/start.sh"]
+EXPOSE 18789
+CMD ["/start-openclaw.sh"]
