@@ -11,20 +11,21 @@ export MALLOC_ARENA_MAX=2
 export PYTHONUNBUFFERED=1
 export PYTHONFAULTHANDLER=1
 
-echo "[entrypoint] Generating nanobot configuration at $config ..."
+echo "[entrypoint] Initializing nanobot configuration at $config ..."
 /app/.venv/bin/python - "$config" <<'PYEOF'
 import json, os, secrets, sys
 
 config_path = sys.argv[1]
 
-api_base = os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE") or "https://gateway.ai.cloudflare.com/v1/c03418af811230a17c32686972c400fc/openclaw/v1"
-api_key = os.environ.get("OPENAI_API_KEY") or os.environ.get("CLOUDFLARE_AI_GATEWAY_KEY") or ""
-model_name = os.environ.get("MODEL_NAME") or "cloudflare/google-ai-studio/gemini-3.7-flash"
-provider_name = os.environ.get("PROVIDER_NAME") or "cloudflare"
+api_base = os.environ.get("OPENAI_BASE_URL") or os.environ.get("OPENAI_API_BASE") or "https://api.openai.com/v1"
+api_key = os.environ.get("OPENAI_API_KEY") or ""
+model_name = os.environ.get("MODEL_NAME") or "gpt-4o"
+provider_name = os.environ.get("PROVIDER_NAME") or "custom"
 
-web_token = os.environ.get("NANOBOT_WEB_TOKEN") or secrets.token_hex(24)
+# WebUI Password / tokenIssueSecret
+web_token = os.environ.get("NANOBOT_WEB_TOKEN") or secrets.token_hex(16)
 
-# Ensure model has provider prefix if needed
+# Format model name with provider prefix if needed
 if "/" in model_name and not model_name.startswith(f"{provider_name}/"):
     target_model = f"{provider_name}/{model_name}"
 else:
@@ -62,9 +63,11 @@ with open(config_path, "w") as fh:
     json.dump(cfg, fh, indent=2)
     fh.write("\n")
 
-print(f"[entrypoint] Config active: provider={provider_name}, model={target_model}")
-print(f"[entrypoint] Endpoint: {api_base}")
-print(f"[entrypoint] WebUI tokenIssueSecret initialized (len={len(web_token)})")
+print("================================================================")
+print("  🔐 NANOBOT WEBUI LOGIN PASSWORD:")
+print(f"     {web_token}")
+print("================================================================")
+print(f"[entrypoint] Model: {target_model} via {api_base}")
 PYEOF
 
 echo "[entrypoint] Starting self-healing supervisor loop for nanobot gateway..."

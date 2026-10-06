@@ -1,14 +1,14 @@
 {
   "agents": {
     "defaults": {
-      "model": "cloudflare/google-ai-studio/gemini-3.7-flash",
-      "provider": "cloudflare"
+      "model": "custom/gpt-4o",
+      "provider": "custom"
     }
   },
   "providers": {
-    "cloudflare": {
-      "api_key": "${CLOUDFLARE_AI_GATEWAY_KEY}",
-      "api_base": "https://gateway.ai.cloudflare.com/v1/c03418af811230a17c32686972c400fc/openclaw/v1"
+    "custom": {
+      "api_key": "${OPENAI_API_KEY:-}",
+      "api_base": "${OPENAI_BASE_URL:-https://api.openai.com/v1}"
     }
   },
   "gateway": {
@@ -20,8 +20,7 @@
       "enabled": true,
       "host": "0.0.0.0",
       "port": 8765,
-      "tokenIssueSecret": "${NANOBOT_WEB_TOKEN}",
-      "websocketRequiresToken": true
+      "token": ""
     }
   }
 }

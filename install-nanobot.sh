@@ -4,8 +4,8 @@
 # ---------------------------------------------------------------------------
 # Deploys HKUDS/nanobot (AI Agent Gateway + WebUI) on Northflank's Always-Free
 # compute tier (512 MB RAM / 0.2 vCPU) with self-healing, crash-proof
-# background restart supervision, boot auto-start, and customized OpenAI-compatible
-# upstream endpoints (Cloudflare AI Gateway, OpenAI, Ollama, Groq, etc.).
+# background restart supervision, boot auto-start, and user-specified
+# OpenAI-compatible upstream endpoints.
 #
 # Usage:
 #   bash install-nanobot.sh
@@ -57,21 +57,31 @@ printf 'Region [europe-west-frankfurt]: '
 read -r REGION; REGION="${REGION:-europe-west-frankfurt}"
 
 # ---------------------------------------------------------------------------
-# 2. Collect Model & Endpoint Configuration
+# 2. Collect Model & Password Configuration
 # ---------------------------------------------------------------------------
 say ""
 say "${CYN}--- Upstream AI Model / Gateway Setup ---${NC}"
 
-printf 'OpenAI-Compatible Base URL [https://gateway.ai.cloudflare.com/v1/c03418af811230a17c32686972c400fc/openclaw/v1]: '
+printf 'OpenAI-Compatible Base URL (e.g. https://api.openai.com/v1): '
 read -r OPENAI_BASE_URL
-OPENAI_BASE_URL="${OPENAI_BASE_URL:-https://gateway.ai.cloudflare.com/v1/c03418af811230a17c32686972c400fc/openclaw/v1}"
+[ -n "${OPENAI_BASE_URL}" ] || die "Base URL is required."
 
 printf 'API Key: '
 read -rs OPENAI_API_KEY; echo
+[ -n "${OPENAI_API_KEY}" ] || die "API Key is required."
 
-printf 'Default Model [google-ai-studio/gemini-3.7-flash]: '
+printf 'Model Name (e.g. gpt-4o, claude-3-7-sonnet, gemini-2.5-flash): '
 read -r MODEL_NAME
-MODEL_NAME="${MODEL_NAME:-google-ai-studio/gemini-3.7-flash}"
+[ -n "${MODEL_NAME}" ] || die "Model Name is required."
+
+printf 'Custom WebUI Password (leave blank to auto-generate): '
+read -rs WEB_TOKEN_INPUT; echo
+
+if [ -z "${WEB_TOKEN_INPUT}" ]; then
+  FINAL_PASSWORD=$(python3 -c "import secrets; print(secrets.token_hex(16))")
+else
+  FINAL_PASSWORD="${WEB_TOKEN_INPUT}"
+fi
 
 say ""
 say "Deploying Nanobot on Free Tier (512 MB / 0.2 vCPU)..."
@@ -179,14 +189,13 @@ fi
 ok "Service registered. Kaniko Docker build triggered."
 
 # ---------------------------------------------------------------------------
-# 7. Inject Environment Variables for AI Provider and Auto-Start
+# 7. Inject Environment Variables for AI Provider, WebUI Password & Auto-Start
 # ---------------------------------------------------------------------------
-say "Configuring Upstream Model Gateway & WebUI Token..."
+say "Configuring Upstream Model Gateway & WebUI Password..."
 
-python3 - "${OPENAI_BASE_URL}" "${OPENAI_API_KEY}" "${MODEL_NAME}" > "${WORKDIR}/env.json" <<'PY'
-import json, sys, secrets
-api_base, api_key, model = sys.argv[1:4]
-web_token = secrets.token_hex(24)
+python3 - "${OPENAI_BASE_URL}" "${OPENAI_API_KEY}" "${MODEL_NAME}" "${FINAL_PASSWORD}" > "${WORKDIR}/env.json" <<'PY'
+import json, sys
+api_base, api_key, model, web_token = sys.argv[1:5]
 
 print(json.dumps({
     "deployment": {
@@ -195,7 +204,7 @@ print(json.dumps({
                 "OPENAI_BASE_URL": api_base,
                 "OPENAI_API_KEY": api_key,
                 "MODEL_NAME": model,
-                "PROVIDER_NAME": "cloudflare",
+                "PROVIDER_NAME": "custom",
                 "NANOBOT_WEB_TOKEN": web_token,
                 "PYTHONUNBUFFERED": "1",
                 "MALLOC_ARENA_MAX": "2"
@@ -268,6 +277,8 @@ say "${GRN}  🎉 NANOBOT IS LIVE ON NORTHFLANK ALWAYS-FREE TIER !        ${NC}"
 say "${GRN}══════════════════════════════════════════════════════════════${NC}"
 say "  🌐 WebUI Dashboard : https://${WEBUI_HOST}/"
 say "  🔌 Gateway Health   : https://${GATEWAY_HOST}/health"
+say ""
+say "  🔑 WEBUI PASSWORD  : ${FINAL_PASSWORD}"
 say ""
 say "  ⚙️  Specs           : 512 MB RAM / 0.2 vCPU (Always-Free)"
 say "  🤖 Model Provider  : ${OPENAI_BASE_URL}"
