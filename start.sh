@@ -29,25 +29,19 @@ fs.writeFileSync("/root/.9router/config.json", JSON.stringify(config, null, 2));
 console.log(`Configured 9router on 0.0.0.0:20128 with ${keys.length} key(s).`);
 '
 
-# 2. Locate 9router standalone server and launch directly in background (avoids interactive TUI prompt exit)
-NINE_ROUTER_DIR=$(node -e '
-const path = require("path");
-const fs = require("fs");
-const base = path.dirname(require.resolve("9router/package.json"));
-const custom = path.join(base, "app", "custom-server.js");
-const server = path.join(base, "app", "server.js");
-if (fs.existsSync(custom)) {
-  console.log(custom);
-} else if (fs.existsSync(server)) {
-  console.log(server);
-} else {
-  console.log("");
-}
-')
+# 2. Locate 9router standalone server and launch directly as persistent background daemon
+NPM_GLOBAL_ROOT=$(npm root -g)
+if [ -f "${NPM_GLOBAL_ROOT}/9router/app/custom-server.js" ]; then
+  NINE_ROUTER_ENTRY="${NPM_GLOBAL_ROOT}/9router/app/custom-server.js"
+elif [ -f "${NPM_GLOBAL_ROOT}/9router/app/server.js" ]; then
+  NINE_ROUTER_ENTRY="${NPM_GLOBAL_ROOT}/9router/app/server.js"
+else
+  NINE_ROUTER_ENTRY="/usr/local/lib/node_modules/9router/app/server.js"
+fi
 
-echo "[*] Found 9router server entrypoint at: $NINE_ROUTER_DIR"
+echo "[*] Found 9router server entrypoint at: ${NINE_ROUTER_ENTRY}"
 echo "[*] Launching 9router daemon on 0.0.0.0:20128..."
-PORT=20128 HOSTNAME=0.0.0.0 NODE_OPTIONS="--max-old-space-size=128" node "$NINE_ROUTER_DIR" > /tmp/9router.log 2>&1 &
+PORT=20128 HOSTNAME=0.0.0.0 NODE_OPTIONS="--max-old-space-size=128" node "${NINE_ROUTER_ENTRY}" &
 sleep 2
 
 # 3. Configure OpenClaw Gateway
@@ -159,7 +153,7 @@ cat << EOF > /root/.openclaw/openclaw.json
 }
 EOF
 
-# 4. Launch OpenClaw Gateway
+# 4. Launch OpenClaw Gateway as main container foreground process
 echo "[*] Launching OpenClaw Gateway on 0.0.0.0:18789..."
 export NODE_OPTIONS="--max-old-space-size=256"
 exec openclaw gateway --port 18789 --bind lan --allow-unconfigured
