@@ -6,28 +6,29 @@ echo "[*] Initializing 9router + OpenClaw unified free stack on Northflank..."
 mkdir -p /root/.9router
 mkdir -p /root/.openclaw/workspace
 
-# 1. Configure 9router Gemini Key Pool
-# Pass GEMINI_KEYS as comma-separated or space-separated list of API keys
-python3 -c "
-import json, os
-raw = os.environ.get('GEMINI_KEYS') or os.environ.get('GEMINI_API_KEY') or ''
-keys = [k.strip() for k in raw.replace(';', ',').split(',') if k.strip()]
-config = {
-    'port': 20129,
-    'host': '0.0.0.0',
-    'providers': {
-        'gemini': {
-            'apiKeys': keys if keys else ['AIzaSyDummyKeyReplaceInDashboard'],
-            'strategy': 'round-robin',
-            'retryOn429': True
-        }
+# 1. Configure 9router Gemini Key Pool using pure Node.js (no python dependency)
+node -e '
+const fs = require("fs");
+const os = require("os");
+const raw = process.env.GEMINI_KEYS || process.env.GEMINI_API_KEY || "";
+const keys = raw.replace(/;/g, ",").split(",").map(k => k.trim()).filter(Boolean);
+
+const config = {
+  port: 20129,
+  host: "0.0.0.0",
+  providers: {
+    gemini: {
+      apiKeys: keys.length > 0 ? keys : ["AIzaSyDummyKeyReplaceInDashboard"],
+      strategy: "round-robin",
+      retryOn429: true
     }
-}
-os.makedirs('/root/.9router', exist_ok=True)
-with open('/root/.9router/config.json', 'w') as f:
-    json.dump(config, f, indent=2)
-print(f'Configured 9router on 0.0.0.0:20129 with {len(keys)} Gemini key(s).')
-"
+  }
+};
+
+fs.mkdirSync("/root/.9router", { recursive: true });
+fs.writeFileSync("/root/.9router/config.json", JSON.stringify(config, null, 2));
+console.log(`Configured 9router on 0.0.0.0:20129 with ${keys.length} Gemini key(s).`);
+'
 
 # 2. Launch 9router in Background (Bound to 0.0.0.0:20129 for public dashboard & internal routing)
 echo "[*] Launching 9router on 0.0.0.0:20129..."
@@ -38,7 +39,7 @@ sleep 2
 if [ -n "$GATEWAY_TOKEN" ]; then
   AUTH_TOKEN="$GATEWAY_TOKEN"
 else
-  AUTH_TOKEN=$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')
+  AUTH_TOKEN=$(node -e 'console.log(require("crypto").randomBytes(16).toString("hex"))')
 fi
 
 cat << EOF > /root/.openclaw/openclaw.json
