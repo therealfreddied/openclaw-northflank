@@ -45,12 +45,13 @@ else
   echo "[i] No GEMINI_KEYS passed. 9router idle; fallback to direct OmniRoute gateway."
 fi
 
-# 2. Configure OpenClaw Gateway
+# 2. Configure OpenClaw Gateway with bind: "lan" so Istio / container proxy can route in
 if [ ! -f /root/.openclaw/openclaw.json ]; then
 cat << EOF > /root/.openclaw/openclaw.json
 {
   "gateway": {
     "mode": "local",
+    "bind": "lan",
     "port": 18789,
     "auth": {
       "mode": "token",
@@ -144,8 +145,9 @@ fi
 if [ -n "$GATEWAY_TOKEN" ]; then
   openclaw config set gateway.auth.token "$GATEWAY_TOKEN" 2>/dev/null || true
 fi
+openclaw config set gateway.bind "lan" 2>/dev/null || true
 
-# 3. Launch OpenClaw Gateway (capped to 256MB RAM)
-echo "[*] Launching OpenClaw Gateway on port ${PORT:-18789} with auth token: ${AUTH_TOKEN}..."
+# 3. Launch OpenClaw Gateway (bind lan = 0.0.0.0, capped to 256MB RAM)
+echo "[*] Launching OpenClaw Gateway on 0.0.0.0:${PORT:-18789} with auth token: ${AUTH_TOKEN}..."
 export NODE_OPTIONS="--max-old-space-size=256"
-exec openclaw gateway --port ${PORT:-18789} --allow-unconfigured
+exec openclaw gateway --port ${PORT:-18789} --bind lan --allow-unconfigured
