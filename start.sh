@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 set -e
 
-echo "[*] Initializing 9router + OpenClaw unified free stack on Northflank..."
+echo "[*] Initializing OpenClaw + 9router Stack on Northflank..."
 
 mkdir -p /root/.9router
 mkdir -p /root/.openclaw/workspace
 
-# 1. Configure 9router Gemini Key Pool using pure Node.js (no python dependency)
+# 1. Configure 9router Gemini Key Pool
 node -e '
 const fs = require("fs");
-const os = require("os");
 const raw = process.env.GEMINI_KEYS || process.env.GEMINI_API_KEY || "";
 const keys = raw.replace(/;/g, ",").split(",").map(k => k.trim()).filter(Boolean);
 
@@ -18,7 +17,7 @@ const config = {
   host: "0.0.0.0",
   providers: {
     gemini: {
-      apiKeys: keys.length > 0 ? keys : ["AIzaSyDummyKeyReplaceInDashboard"],
+      apiKeys: keys.length > 0 ? keys : ["placeholder-key"],
       strategy: "round-robin",
       retryOn429: true
     }
@@ -27,12 +26,12 @@ const config = {
 
 fs.mkdirSync("/root/.9router", { recursive: true });
 fs.writeFileSync("/root/.9router/config.json", JSON.stringify(config, null, 2));
-console.log(`Configured 9router on 0.0.0.0:20129 with ${keys.length} Gemini key(s).`);
+console.log(`Configured 9router on 0.0.0.0:20129 with ${keys.length} key(s).`);
 '
 
-# 2. Launch 9router in Background (Bound to 0.0.0.0:20129 for public dashboard & internal routing)
+# 2. Launch 9router in Background (low memory footprint)
 echo "[*] Launching 9router on 0.0.0.0:20129..."
-NODE_OPTIONS="--max-old-space-size=96" 9router start --port 20129 --host 0.0.0.0 &
+NODE_OPTIONS="--max-old-space-size=96" 9router start --port 20129 --host 0.0.0.0 > /tmp/9router.log 2>&1 &
 sleep 2
 
 # 3. Configure OpenClaw Gateway
@@ -41,6 +40,10 @@ if [ -n "$GATEWAY_TOKEN" ]; then
 else
   AUTH_TOKEN=$(node -e 'console.log(require("crypto").randomBytes(16).toString("hex"))')
 fi
+
+echo "================================================================"
+echo "  OPENCLAW GATEWAY AUTH TOKEN: ${AUTH_TOKEN}"
+echo "================================================================"
 
 cat << EOF > /root/.openclaw/openclaw.json
 {
@@ -89,7 +92,7 @@ cat << EOF > /root/.openclaw/openclaw.json
       "omniroute": {
         "baseUrl": "https://api.nullroute.lol/v1",
         "api": "openai-completions",
-        "apiKey": "sk-c4ff2e1075c20e63fa572bb2f5d9d6cc3091d9666ac5ab4f",
+        "apiKey": "sk-c4f4b123d6a9e108ab4f",
         "models": [
           {
             "id": "nullroute/smart",
@@ -118,28 +121,29 @@ cat << EOF > /root/.openclaw/openclaw.json
       "search": {
         "url": "https://api.nullroute.lol/search/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4ff2e1075c20e63fa572bb2f5d9d6cc3091d9666ac5ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
       },
       "memory": {
         "url": "https://api.nullroute.lol/memory/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4ff2e1075c20e63fa572bb2f5d9d6cc3091d9666ac5ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
       },
       "crawl": {
         "url": "https://api.nullroute.lol/crawl/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4ff2e1075c20e63fa572bb2f5d9d6cc3091d9666ac5ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
       },
       "context": {
         "url": "https://api.nullroute.lol/docs/mcp",
         "transport": "streamable-http",
-        "headers": { "Authorization": "Bearer sk-c4ff2e1075c20e63fa572bb2f5d9d6cc3091d9666ac5ab4f" }
+        "headers": { "Authorization": "Bearer sk-c4f4b123d6a9e108ab4f" }
       }
     }
   }
 }
 EOF
 
-echo "[*] Launching OpenClaw Gateway on 0.0.0.0:18789 with auth token: ${AUTH_TOKEN}"
+# 4. Launch OpenClaw Gateway (capped heap to stay under container limits)
+echo "[*] Launching OpenClaw Gateway on 0.0.0.0:18789..."
 export NODE_OPTIONS="--max-old-space-size=256"
 exec openclaw gateway --port 18789 --bind lan --allow-unconfigured
