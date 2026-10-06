@@ -1,7 +1,7 @@
 {
   "agents": {
     "defaults": {
-      "model": "anthropic/claude-3-5-sonnet-20241022",
+      "model": "custom/gemini-2.5-flash",
       "provider": "custom"
     }
   },
