@@ -1,0 +1,26 @@
+{
+  "agents": {
+    "defaults": {
+      "model": "anthropic/claude-3-5-sonnet-20241022",
+      "provider": "custom"
+    }
+  },
+  "providers": {
+    "custom": {
+      "api_key": "${OPENAI_API_KEY:-dummy}",
+      "api_base": "${OPENAI_BASE_URL:-https://gateway.ai.cloudflare.com/v1/c03418af811230a17c32686972c400fc/openclaw/v1}"
+    }
+  },
+  "gateway": {
+    "host": "0.0.0.0",
+    "port": 18790
+  },
+  "channels": {
+    "websocket": {
+      "enabled": true,
+      "host": "0.0.0.0",
+      "port": 8765,
+      "token": "${NANOBOT_WEB_TOKEN:-}"
+    }
+  }
+}
