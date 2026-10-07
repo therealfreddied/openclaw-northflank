@@ -1,79 +1,69 @@
 #!/bin/sh
-# Nanobot entrypoint for Northflank Free Tier (Self-Healing & Crash-Proof)
+# Nanobot entrypoint for Northflank Free Tier (Self-Healing, Persistent & Crash-Proof)
 set -u
 
 dir="/home/nanobot/.nanobot"
 mkdir -p "$dir"
 config="$dir/config.json"
 
-# Python memory optimization for 512MB / 0.2 vCPU
 export MALLOC_ARENA_MAX=2
 export PYTHONUNBUFFERED=1
 export PYTHONFAULTHANDLER=1
 
-echo "[entrypoint] Initializing nanobot configuration at $config ..."
+echo "[entrypoint] Setting up persistent nanobot configuration at $config ..."
+
+# Always merge environment variables and maintain full model & MCP templates
 /app/.venv/bin/python - "$config" <<'PYEOF'
-import json, os, secrets, sys
+import json, os, sys
 
 config_path = sys.argv[1]
 
-api_base = os.environ.get("OPENAI_BASE_URL", "https://api.openai.com/v1")
-api_key = os.environ.get("OPENAI_API_KEY", "dummy-key")
-model_name = os.environ.get("MODEL_NAME", "gpt-4o")
-provider_name = os.environ.get("PROVIDER_NAME", "custom")
-
-# WebUI Password: use env var if provided, otherwise default to a clean fixed password
-web_token = os.environ.get("NANOBOT_WEB_TOKEN") or "nanobot2026"
-
-# Format model name with provider prefix if needed
-if "/" in model_name and not model_name.startswith(f"{provider_name}/"):
-    target_model = f"{provider_name}/{model_name}"
+# Load base template if present
+base_template_path = "/app/northflank-config.json"
+if os.path.exists(base_template_path):
+    try:
+        with open(base_template_path, "r") as f:
+            cfg = json.load(f)
+    except Exception:
+        cfg = {}
 else:
-    target_model = model_name if model_name.startswith(f"{provider_name}/") else f"{provider_name}/{model_name}"
+    cfg = {}
 
-cfg = {
-    "agents": {
-        "defaults": {
-            "model": target_model,
-            "provider": provider_name,
-        }
-    },
-    "providers": {
-        provider_name: {
-            "api_key": api_key or "dummy-key",
-            "api_base": api_base,
-        }
-    },
-    "gateway": {
-        "host": "0.0.0.0",
-        "port": 18790
-    },
-    "channels": {
-        "websocket": {
-            "enabled": True,
-            "host": "0.0.0.0",
-            "port": 8765,
-            "tokenIssueSecret": web_token,
-            "token": web_token,
-            "websocketRequiresToken": True,
-        }
-    }
-}
+# Ingest runtime env variables if provided
+cf_key = os.environ.get("CLOUDFLARE_AI_GATEWAY_KEY")
+if cf_key:
+    cfg.setdefault("providers", {}).setdefault("cloudflare", {})["apiKey"] = cf_key
+    cfg.setdefault("providers", {}).setdefault("custom", {})["apiKey"] = cf_key
 
+cf_base = os.environ.get("OPENAI_BASE_URL")
+if cf_base:
+    cfg.setdefault("providers", {}).setdefault("cloudflare", {})["apiBase"] = cf_base
+    cfg.setdefault("providers", {}).setdefault("custom", {})["apiBase"] = cf_base
+
+web_token = os.environ.get("NANOBOT_WEB_TOKEN") or "nanobot2026"
+cfg.setdefault("channels", {}).setdefault("websocket", {})["tokenIssueSecret"] = web_token
+cfg.setdefault("channels", {}).setdefault("websocket", {})["token"] = web_token
+cfg.setdefault("channels", {}).setdefault("websocket", {})["host"] = "0.0.0.0"
+cfg.setdefault("channels", {}).setdefault("websocket", {})["port"] = 8765
+cfg.setdefault("channels", {}).setdefault("websocket", {})["enabled"] = True
+cfg.setdefault("channels", {}).setdefault("websocket", {})["websocketRequiresToken"] = True
+
+cfg.setdefault("gateway", {})["host"] = "0.0.0.0"
+cfg.setdefault("gateway", {})["port"] = 18790
+
+# Atomic write of master configuration
 with open(config_path, "w") as fh:
     json.dump(cfg, fh, indent=2)
     fh.write("\n")
 
-print("================================================================")
-print("  🔐 NANOBOT WEBUI LOGIN PASSWORD:")
-print(f"     {web_token}")
-print("================================================================")
-print(f"[entrypoint] Model: {target_model} via {api_base}")
+presets_count = len(cfg.get("modelPresets", {}))
+mcp_count = len(cfg.get("tools", {}).get("mcpServers", {}))
+print(f"[entrypoint] Master configuration ready: {presets_count} model presets, {mcp_count} MCP servers.")
+print(f"[entrypoint] Password active: {web_token}")
 PYEOF
 
 echo "[entrypoint] Starting self-healing supervisor loop for nanobot gateway..."
 
-# Supervisor restart loop: if nanobot ever exits/crashes, restart cleanly after 3s
 while true; do
     echo "[supervisor] $(date -u +%FT%TZ) Launching nanobot gateway on 0.0.0.0 (WebUI: 8765, Gateway: 18790)..."
     /app/.venv/bin/nanobot gateway --foreground --config "$config" || true
