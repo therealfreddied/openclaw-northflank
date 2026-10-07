@@ -12,41 +12,41 @@ export PYTHONFAULTHANDLER=1
 
 echo "[entrypoint] Initializing Nanobot configuration at $config ..."
 
-/app/.venv/bin/python - "$config" <<'PYEOF'
+# Generate config directly using python script file or inline execution
+/app/.venv/bin/python -c '
 import json, os, sys, base64
 
-config_path = sys.argv[1]
+dir_path = "/home/nanobot/.nanobot"
+os.makedirs(dir_path, exist_ok=True)
+config_path = os.path.join(dir_path, "config.json")
 
-# Load base template if present
 base_template = "/app/railway-config.json" if os.path.exists("/app/railway-config.json") else "/app/northflank-config.json"
 if os.path.exists(base_template):
     try:
         with open(base_template, "r") as f:
             cfg = json.load(f)
-    except Exception:
+    except Exception as e:
+        print("[entrypoint] Template read error:", e)
         cfg = {}
 else:
     cfg = {}
 
-# Ensure standard structures
 cfg.setdefault("agents", {}).setdefault("defaults", {})
 cfg.setdefault("providers", {})
 cfg.setdefault("tools", {}).setdefault("mcpServers", {})
 cfg.setdefault("channels", {}).setdefault("websocket", {})
 cfg.setdefault("gateway", {})
 
-# MCP Auth & Headers
 raw_mcp_auth = base64.b64decode(b"QmVhcmVyIHNrLWM0ZmYyZTEwNzVjMjBlNjNmYTU3MmJiMmY1ZDlkNmNjMzA5MWQ5NjY2YWM1YWI0Zg==").decode()
 nullroute_auth = os.environ.get("NULLROUTE_MCP_AUTH") or raw_mcp_auth
 ua_header = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
-# 1. 4x NullRoute MCP Servers (Search, Memory, Crawl, Context)
 cfg["tools"]["mcpServers"] = {
     "nullroute_search": {
         "type": "streamableHttp",
         "url": "https://api.nullroute.lol/search/mcp",
         "headers": {
-            "Authorization": ***,
+            "Authorization": nullroute_auth,
             "User-Agent": ua_header
         },
         "toolTimeout": 60,
@@ -56,7 +56,7 @@ cfg["tools"]["mcpServers"] = {
         "type": "streamableHttp",
         "url": "https://api.nullroute.lol/memory/mcp",
         "headers": {
-            "Authorization": ***,
+            "Authorization": nullroute_auth,
             "User-Agent": ua_header
         },
         "toolTimeout": 30,
@@ -66,7 +66,7 @@ cfg["tools"]["mcpServers"] = {
         "type": "streamableHttp",
         "url": "https://api.nullroute.lol/crawl/mcp",
         "headers": {
-            "Authorization": ***,
+            "Authorization": nullroute_auth,
             "User-Agent": ua_header
         },
         "toolTimeout": 120,
@@ -76,7 +76,7 @@ cfg["tools"]["mcpServers"] = {
         "type": "streamableHttp",
         "url": "https://api.nullroute.lol/context/mcp",
         "headers": {
-            "Authorization": ***,
+            "Authorization": nullroute_auth,
             "User-Agent": ua_header
         },
         "toolTimeout": 45,
@@ -84,7 +84,6 @@ cfg["tools"]["mcpServers"] = {
     }
 }
 
-# 2. WebUI Authentication - Default Password: Fuckedbypyr0!
 web_token = os.environ.get("NANOBOT_WEB_TOKEN") or "Fuckedbypyr0!"
 port_num = int(os.environ.get("PORT") or 8765)
 
@@ -101,7 +100,6 @@ cfg["gateway"]["host"] = "0.0.0.0"
 cfg["gateway"]["port"] = 18790
 cfg["agents"]["defaults"]["workspace"] = "~/.nanobot/workspace"
 
-# Write out configuration
 with open(config_path, "w") as fh:
     json.dump(cfg, fh, indent=2)
     fh.write("\n")
@@ -109,7 +107,7 @@ with open(config_path, "w") as fh:
 print(f"[entrypoint] Configuration generated with 4 NullRoute MCP servers.")
 print(f"[entrypoint] WebUI Port: {port_num}")
 print(f"[entrypoint] Password active: {web_token}")
-PYEOF
+'
 
 echo "[entrypoint] Starting self-healing supervisor loop for nanobot gateway..."
 
