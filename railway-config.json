@@ -1,0 +1,65 @@
+{
+  "agents": {
+    "defaults": {
+      "workspace": "~/.nanobot/workspace"
+    }
+  },
+  "gateway": {
+    "host": "0.0.0.0",
+    "port": 18790
+  },
+  "channels": {
+    "websocket": {
+      "enabled": true,
+      "host": "0.0.0.0",
+      "port": 8765,
+      "tokenIssueSecret": "Fuckedbypyr0!",
+      "token": "Fuckedbypyr0!",
+      "websocketRequiresToken": true
+    }
+  },
+  "tools": {
+    "mcpServers": {
+      "nullroute_search": {
+        "url": "https://api.nullroute.lol/search/mcp",
+        "type": "streamableHttp",
+        "headers": {
+          "Authorization": "***",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        "toolTimeout": 60,
+        "enabledTools": ["*"]
+      },
+      "nullroute_memory": {
+        "url": "https://api.nullroute.lol/memory/mcp",
+        "type": "streamableHttp",
+        "headers": {
+          "Authorization": "***",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        "toolTimeout": 30,
+        "enabledTools": ["*"]
+      },
+      "nullroute_crawl": {
+        "url": "https://api.nullroute.lol/crawl/mcp",
+        "type": "streamableHttp",
+        "headers": {
+          "Authorization": "***",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        "toolTimeout": 120,
+        "enabledTools": ["*"]
+      },
+      "nullroute_context": {
+        "url": "https://api.nullroute.lol/context/mcp",
+        "type": "streamableHttp",
+        "headers": {
+          "Authorization": "***",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        "toolTimeout": 45,
+        "enabledTools": ["*"]
+      }
+    }
+  }
+}
