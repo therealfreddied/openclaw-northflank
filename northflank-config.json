@@ -17,13 +17,11 @@
     "cloudflare": {
       "apiKey": "${CLOUDFLARE_AI_GATEWAY_KEY:-not-set}",
       "apiBase": "${OPENAI_BASE_URL:-https://gateway.ai.cloudflare.com/v1/c03418af811230a17c32686972c400fc/openclaw/v1}",
-      "apiType": "chat_completions",
       "displayName": "Cloudflare AI Gateway"
     },
     "custom": {
       "apiKey": "${CLOUDFLARE_AI_GATEWAY_KEY:-not-set}",
       "apiBase": "${OPENAI_BASE_URL:-https://gateway.ai.cloudflare.com/v1/c03418af811230a17c32686972c400fc/openclaw/v1}",
-      "apiType": "chat_completions",
       "displayName": "Cloudflare AI Gateway (Custom)"
     }
   },
@@ -165,7 +163,9 @@
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         "toolTimeout": 60,
-        "enabledTools": ["*"]
+        "enabledTools": [
+          "*"
+        ]
       },
       "nullroute_memory": {
         "url": "https://api.nullroute.lol/memory/mcp",
@@ -175,7 +175,9 @@
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         "toolTimeout": 30,
-        "enabledTools": ["*"]
+        "enabledTools": [
+          "*"
+        ]
       },
       "nullroute_crawl": {
         "url": "https://api.nullroute.lol/crawl/mcp",
@@ -185,7 +187,9 @@
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         "toolTimeout": 120,
-        "enabledTools": ["*"]
+        "enabledTools": [
+          "*"
+        ]
       },
       "nullroute_context": {
         "url": "https://api.nullroute.lol/context/mcp",
@@ -195,7 +199,9 @@
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         },
         "toolTimeout": 45,
-        "enabledTools": ["*"]
+        "enabledTools": [
+          "*"
+        ]
       }
     }
   }

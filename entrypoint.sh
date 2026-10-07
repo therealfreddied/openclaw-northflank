@@ -51,13 +51,11 @@ ua_header = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML
 cfg["providers"]["cloudflare"] = {
     "apiKey": cf_key,
     "apiBase": cf_base,
-    "apiType": "chat_completions",
     "displayName": "Cloudflare AI Gateway"
 }
 cfg["providers"]["custom"] = {
     "apiKey": cf_key,
     "apiBase": cf_base,
-    "apiType": "chat_completions",
     "displayName": "Cloudflare AI Gateway (Custom)"
 }
 
