@@ -55,6 +55,7 @@ RUN for channel in $(printf '%s' "$NANOBOT_CHANNELS" | tr ',' ' '); do \
 # at startup). Lives in the code dir (/app), not the data dir, so a mounted disk
 # won't shadow it. Only used when RENDER=true; ignored by local runs.
 COPY render-config.json ./
+COPY generate_config.py ./
 COPY railway-config.json ./
 COPY northflank-config.json ./
 
